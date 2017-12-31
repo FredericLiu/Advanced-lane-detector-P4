@@ -48,6 +48,7 @@ To demonstrate this step, I will describe how I apply the distortion correction 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
 I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines 33-42 in `pipelineClass.py`, and the thresholding functions are defined at lines 108-171 in 'pipelineClass.py'). 
+
 I used threholdings on sobelx, sobely, magnitude, direction and color, all combined these five images to detect the lanes.
 
 I will demonstrate the thresholded test images later in section 6.
@@ -55,9 +56,12 @@ I will demonstrate the thresholded test images later in section 6.
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `corners_unwarp()`, which appears in lines 301-320 in `pipelineClass.py` 
+The code for my perspective transform includes a function called `corners_unwarp()`, which appears in lines 301-320 in `pipelineClass.py`
+ 
 corners_unwarp() has two features:
+
 1. undistort the input image using pickled mtx and dist coeffects, via cv2.undistort.
+
 2. transform the image using cv2.warpPerspective, from source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
 
 ```python
@@ -80,9 +84,14 @@ I will demonstrate the thresholding and transforming result of the test images l
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
 I defined three functions to identify lane pixels and fit polynomial, FindingBsae(), firstSliding() and skipSliding() at lines 173-278 in 'pipelineClass.py'
+
 FindingBase() used histogram to find the two base point of two lanes.
+
 firstSliding() used sliding window to find the lane pixels, based on the base point from FindingBase(), finally fit the pixels with a ploynomial
-skipSliding() is used for the case that you has find a valid polynomial in last frame, then for current frame, the algorithm will use skipSliding() to find the polynomial for current frame. the core thinking is find pixels around the polynomial fitted in last frame, as the new lane pixels for current frame.
+
+skipSliding() is used for the case that you has find a valid polynomial in last frame, then for current frame, the algorithm will use skipSliding() to find the polynomial for 
+
+current frame. the core thinking is find pixels around the polynomial fitted in last frame, as the new lane pixels for current frame.
 
 And in the pipeline, I designed the strategy including smoothing, reset and sanity check, shown as bellow code:
 
@@ -143,5 +152,7 @@ Here's a [link to my video result](https://github.com/FredericLiu/Advanced-lane-
 
 I have discuss some of my pipeline and algorithm above in the writeup.
 Besides that, there are also some problem need to be settled in the future:
+
 a. I caculated the radius of curvature but didn't use them to check the sanity, because sometimes the curvature are quite different, especially when on the straight lane.
+
 b. The current algorithm performed quite good on project video, but for the challenge vedios, it's result is very bad. I assume this is because the threholding can't find the correct lanes, but I tried to tune the thresholds for a few days, still can't get the acceptible result. In the future I need to find some reference about this topid to learn.
