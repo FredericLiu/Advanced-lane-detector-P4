@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 from collections import deque
 
 class Line():
@@ -17,9 +18,10 @@ class Line():
         #polynomial coefficients averaged over the last 5 iterations
         self.best_leftfit = None  
         self.best_rightfit = None 
-        #radius of curvature of the line
-        self.left_curverad = None 
-        self.right_curverad = None 
+        #radius of curvature of the line and car center positon
+        self.left_curverad = 0 
+        self.right_curverad = 0
+        self.center_offset_m = 0
         
     def img_process(self, image):   
         '''
@@ -66,10 +68,10 @@ class Line():
                     reset_counter = 0
          
         #draw the lanes region and two small window to display some info on the original frame
-        final_image = self.drawLane(image, binary_warped, self.best_leftfit, self.best_rightfit, Minv, out_img)
+        final_image = self.drawLane(image_undist, binary_warped, self.best_leftfit, self.best_rightfit, Minv, out_img)
         
         #caculate the curve radius
-        self.left_curverad, self.right_curverad = self.measureCurv(leftx, lefty, rightx, righty)
+        self.measureCurv(leftx, lefty, rightx, righty,left_fit, right_fit)
         print(self.left_curverad, 'm', self.right_curverad, 'm')          
         #self.plotTestImage(color_binary, gradx, mag_binary, combined, out_img, image)
         return final_image
@@ -277,7 +279,7 @@ class Line():
         
         return  leftx, lefty, rightx, righty,left_fit, right_fit, out_img
     
-    def measureCurv(self,leftx, lefty, rightx, righty):
+    def measureCurv(self,leftx, lefty, rightx, righty, left_fit, right_fit):
         '''
         Calcualte the radius ofcurvature 
         '''
@@ -293,10 +295,17 @@ class Line():
         left_fit_cr = np.polyfit(lefty*ym_per_pix, leftx*xm_per_pix, 2)
         right_fit_cr = np.polyfit(righty*ym_per_pix, rightx*xm_per_pix, 2)
         # Calculate the new radii of curvature
-        left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
-        right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+        self.left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
+        self.right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
         # Now our radius of curvature is in meters
-        return left_curverad, right_curverad 
+        
+        #compute the position of the car center
+        
+        img_center  = 1280/2
+        center_offset_img_space = (((left_fit[0] * y_eval**2 + left_fit[1] * y_eval + left_fit[2]) + 
+                                    (right_fit[0] * y_eval**2 + right_fit[1] * y_eval + right_fit[2])) / 2) - img_center
+        self.center_offset_m = center_offset_img_space * xm_per_pix   
+        
     
     def corners_unwarp(self,img, mtx, dist):
         '''
@@ -323,6 +332,7 @@ class Line():
         '''
         draw detected region on original frame
         Also draw two small window with top-down perspective on original frame, to indicate the internal info of the algrithom
+        Also draw the text of curavture and car positon on the fram
         '''
         # Create an image to draw the lines on
         warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
@@ -346,12 +356,26 @@ class Line():
         # Combine the result with the original image
         result = cv2.addWeighted(image, 1, newwarp, 0.3, 0) 
         
-        #add two small-size video on the result vedio
+        #add two small-size video on the result video
         color_warp_small = cv2.resize(color_warp, (256, 144))
         cv2.polylines(lane_topdown_img,np.int_([pts]),False,(227,238,214),8)  
         lane_topdown_img_small = cv2.resize(lane_topdown_img, (256, 144))
         result[20: 164, 10: 266] = color_warp_small
         result[20: 164, 276: 532] = lane_topdown_img_small
+        
+        #add text of curvature and car center position on frames
+        template = "{0:17}{1:17}{2:17}"
+        txt_header = template.format("Left Curvature", "Right Curvature", "Center Alignment") 
+        txt_values = template.format("{:.4f}m".format(self.left_curverad), 
+                                             "{:.4f}m".format(self.right_curverad),
+                                             "{:.4f}m Right".format(self.center_offset_m))
+        if self.center_offset_m < 0.0:
+            txt_values = template.format("{:.4f}m".format(self.left_curverad), 
+                                                 "{:.4f}m".format(self.right_curverad),
+                                             "{:.4f}m Left".format(math.fabs(self.center_offset_m)))      
+
+        cv2.putText(result, txt_header, (10, 180), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 1, cv2.LINE_AA)
+        cv2.putText(result, txt_values, (10, 220), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)        
         return result
     
     def plotTestImage(self, color_binary,gradx,mag_binary,combined,color_transformed,orginal_img):

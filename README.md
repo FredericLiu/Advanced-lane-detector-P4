@@ -144,6 +144,10 @@ I will demonstrate the results that using this pipeline over the test images as 
 
 Here's a [link to my video result](https://github.com/FredericLiu/Advanced-lane-detector-P4/blob/master/output_images/lanes_project_video.mp4)
 
+Also I provide an example image to show the result of the pipeline:
+
+![Pipeline result](https://github.com/FredericLiu/Advanced-lane-detector-P4/blob/master/output_images/Example_image.png)
+
 ---
 
 ### Discussion

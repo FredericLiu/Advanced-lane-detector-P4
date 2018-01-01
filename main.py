@@ -26,9 +26,9 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 #ffmpeg_extract_subclip('project_video.mp4', 22, 27, targetname=project_video_sample_path)
 detector = Line(mtx,dist)
-clip1 = VideoFileClip('project_video_sample.mp4')
+clip1 = VideoFileClip('project_video.mp4')
 project_video_clip = clip1.fl_image(detector.img_process) #NOTE: this function expects color images!!
-project_video_clip.write_videofile('output_images/lanes_project_video_sample.mp4', audio=False)
+project_video_clip.write_videofile('output_images/lanes_project_video.mp4', audio=False)
 
 
 
